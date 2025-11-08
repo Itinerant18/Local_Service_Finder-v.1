@@ -243,6 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      setSession(null);
       setUser(null);
       recaptchaVerifier = null;
     } catch (error: any) {

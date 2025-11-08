@@ -2,11 +2,12 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Activi
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
+import { updateUserProfile } from '@/lib/realtime-helpers';
 import { ArrowLeft } from 'lucide-react-native';
 
 export default function ProfileEdit() {
   const router = useRouter();
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
 
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [phone, setPhone] = useState(user?.phone_number || '');
@@ -27,14 +28,19 @@ export default function ProfileEdit() {
     }
     setSaving(true);
     try {
-      await updateProfile({
+      const updatedProfile = {
         full_name: fullName,
         phone_number: phone,
         city: city || null,
         state: stateVal || null,
         pincode: pincode || null,
         address: address || null,
-      });
+      };
+
+      if(user && user.id) {
+        await updateUserProfile(user.id, updatedProfile);
+      }
+
       Alert.alert('Success', 'Profile updated successfully', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -204,5 +210,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
-

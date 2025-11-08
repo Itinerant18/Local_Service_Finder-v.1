@@ -1,11 +1,14 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getProviderByUserId, getUserBookings } from '@/lib/realtime-helpers';
-import { TrendingUp, Calendar, Star, DollarSign } from 'lucide-react-native';
+import { TrendingUp, Calendar, Star, DollarSign, LogOut } from 'lucide-react-native';
+import { globalStyles } from '@/styles/global';
+import { useRouter } from 'expo-router';
 
 export default function ProviderHome() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalBookings: 0,
     completedBookings: 0,
@@ -52,42 +55,63 @@ export default function ProviderHome() {
     }
   };
 
+  const handleSignOut = async () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', onPress: () => {}, style: 'cancel' },
+      {
+        text: 'Sign Out',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            await signOut();
+            router.replace('/(auth)/signin');
+          } catch (error: any) {
+            Alert.alert('Error', error.message);
+          } finally {
+            setLoading(false);
+          }
+        },
+        style: 'destructive',
+      },
+    ]);
+  };
+
   const renderStatCard = (icon: any, label: string, value: string | number) => (
-    <View style={styles.statCard}>
-      <View style={styles.statIconContainer}>{icon}</View>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
+    <View style={globalStyles.statCard}>
+      <View style={globalStyles.statIconContainer}>{icon}</View>
+      <Text style={globalStyles.statLabel}>{label}</Text>
+      <Text style={globalStyles.statValue}>{value}</Text>
     </View>
   );
 
   const renderBookingItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.bookingItem}>
-      <View style={styles.bookingItemHeader}>
-        <Text style={styles.bookingDate}>
+    <TouchableOpacity style={globalStyles.bookingItem}>
+      <View style={globalStyles.bookingItemHeader}>
+        <Text style={globalStyles.bookingDate}>
           {new Date(item.booking_date).toLocaleDateString('en-IN', {
             month: 'short',
             day: 'numeric',
           })}
         </Text>
-        <Text style={styles.bookingTime}>{item.booking_time}</Text>
+        <Text style={globalStyles.bookingTime}>{item.booking_time}</Text>
       </View>
-      <Text style={styles.bookingAddress} numberOfLines={1}>
+      <Text style={globalStyles.bookingAddress} numberOfLines={1}>
         {item.service_address}
       </Text>
-      <View style={styles.bookingFooter}>
-        <Text style={styles.bookingPrice}>₹{item.estimated_price}</Text>
+      <View style={globalStyles.bookingFooter}>
+        <Text style={globalStyles.bookingPrice}>₹{item.estimated_price}</Text>
         <View
           style={[
-            styles.bookingStatus,
-            item.status === 'confirmed' && styles.statusConfirmed,
-            item.status === 'pending' && styles.statusPending,
+            globalStyles.bookingStatus,
+            item.status === 'confirmed' && globalStyles.statusConfirmed,
+            item.status === 'pending' && globalStyles.statusPending,
           ]}
         >
           <Text
             style={[
-              styles.bookingStatusText,
-              item.status === 'confirmed' && styles.statusTextConfirmed,
-              item.status === 'pending' && styles.statusTextPending,
+              globalStyles.bookingStatusText,
+              item.status === 'confirmed' && globalStyles.statusTextConfirmed,
+              item.status === 'pending' && globalStyles.statusTextPending,
             ]}
           >
             {item.status === 'confirmed' ? 'Confirmed' : 'Pending'}
@@ -99,24 +123,24 @@ export default function ProviderHome() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={globalStyles.centerContainer}>
         <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={globalStyles.container}>
       <FlatList
         data={[1]}
         renderItem={() => (
           <>
-            <View style={styles.header}>
-              <Text style={styles.greeting}>Welcome back!</Text>
-              <Text style={styles.subGreeting}>{user?.full_name}</Text>
+            <View style={globalStyles.header}>
+              <Text style={globalStyles.greeting}>Welcome back!</Text>
+              <Text style={globalStyles.subGreeting}>{user?.full_name}</Text>
             </View>
 
-            <View style={styles.statsGrid}>
+            <View style={globalStyles.statsGrid}>
               {renderStatCard(
                 <Calendar size={24} color="#2563eb" strokeWidth={2} />,
                 'Total Bookings',
@@ -139,11 +163,11 @@ export default function ProviderHome() {
               )}
             </View>
 
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Upcoming Bookings</Text>
+            <View style={globalStyles.section}>
+              <View style={globalStyles.sectionHeader}>
+                <Text style={globalStyles.sectionTitle}>Upcoming Bookings</Text>
                 <TouchableOpacity>
-                  <Text style={styles.seeAll}>View all</Text>
+                  <Text style={globalStyles.seeAll}>View all</Text>
                 </TouchableOpacity>
               </View>
               {upcomingBookings.length > 0 ? (
@@ -152,238 +176,45 @@ export default function ProviderHome() {
                   renderItem={renderBookingItem}
                   keyExtractor={(item) => item.id}
                   scrollEnabled={false}
-                  contentContainerStyle={styles.bookingsList}
+                  contentContainerStyle={globalStyles.bookingsList}
                 />
               ) : (
-                <View style={styles.noBookingsContainer}>
+                <View style={globalStyles.noBookingsContainer}>
                   <Calendar size={40} color="#d1d5db" strokeWidth={1.5} />
-                  <Text style={styles.noBookingsText}>No upcoming bookings</Text>
-                  <Text style={styles.noBookingsSubtext}>You're all caught up!</Text>
+                  <Text style={globalStyles.noBookingsText}>No upcoming bookings</Text>
+                  <Text style={globalStyles.noBookingsSubtext}>You're all caught up!</Text>
                 </View>
               )}
             </View>
 
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Profile Status</Text>
+            <View style={globalStyles.section}>
+              <View style={globalStyles.sectionHeader}>
+                <Text style={globalStyles.sectionTitle}>Profile Status</Text>
               </View>
-              <View style={styles.profileStatusCard}>
-                <View style={styles.statusIndicator}>
-                  <View style={styles.statusDot} />
-                  <Text style={styles.statusLabel}>Verified</Text>
+              <View style={globalStyles.profileStatusCard}>
+                <View style={globalStyles.statusIndicator}>
+                  <View style={globalStyles.statusDot} />
+                  <Text style={globalStyles.statusLabel}>Verified</Text>
                 </View>
-                <TouchableOpacity style={styles.editButton}>
-                  <Text style={styles.editButtonText}>Edit Profile</Text>
+                <TouchableOpacity style={globalStyles.editButton}>
+                  <Text style={globalStyles.editButtonText}>Edit Profile</Text>
                 </TouchableOpacity>
               </View>
             </View>
+            <TouchableOpacity
+              style={globalStyles.signOutButton}
+              onPress={handleSignOut}
+              disabled={loading}
+            >
+              <LogOut size={20} color="#ef4444" strokeWidth={2} />
+              <Text style={globalStyles.signOutButtonText}>Sign Out</Text>
+            </TouchableOpacity>
           </>
         )}
         keyExtractor={() => 'provider-home'}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={globalStyles.listContent}
         showsVerticalScrollIndicator={false}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  subGreeting: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    gap: 8,
-  },
-  statCard: {
-    width: '48%',
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 14,
-    alignItems: 'center',
-  },
-  statIconContainer: {
-    marginBottom: 8,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#6b7280',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-  },
-  section: {
-    marginBottom: 16,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  seeAll: {
-    fontSize: 13,
-    color: '#2563eb',
-    fontWeight: '500',
-  },
-  bookingsList: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  bookingItem: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 12,
-  },
-  bookingItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  bookingDate: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  bookingTime: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  bookingAddress: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 8,
-  },
-  bookingFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  bookingPrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  bookingStatus: {
-    backgroundColor: '#fef3c7',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 4,
-  },
-  statusConfirmed: {
-    backgroundColor: '#dbeafe',
-  },
-  statusPending: {
-    backgroundColor: '#fef3c7',
-  },
-  bookingStatusText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#92400e',
-  },
-  statusTextConfirmed: {
-    color: '#0c4a6e',
-  },
-  statusTextPending: {
-    color: '#92400e',
-  },
-  noBookingsContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  noBookingsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginTop: 12,
-  },
-  noBookingsSubtext: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginTop: 4,
-  },
-  profileStatusCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#16a34a',
-  },
-  statusLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1f2937',
-  },
-  editButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#2563eb',
-    borderRadius: 6,
-  },
-  editButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-});

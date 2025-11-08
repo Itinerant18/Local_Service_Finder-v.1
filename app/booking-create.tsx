@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   TextInput,
@@ -13,6 +12,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getProviderById, createBooking } from '@/lib/realtime-helpers';
 import { ArrowLeft, Calendar, Clock, MapPin, DollarSign } from 'lucide-react-native';
+import { globalStyles } from '@/styles/global';
 
 export default function BookingCreate() {
   const router = useRouter();
@@ -104,7 +104,7 @@ export default function BookingCreate() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={globalStyles.centerContainer}>
         <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
@@ -112,38 +112,38 @@ export default function BookingCreate() {
 
   if (!provider) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Provider not found</Text>
+      <View style={globalStyles.centerContainer}>
+        <Text style={globalStyles.errorText}>Provider not found</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={globalStyles.container}>
+      <View style={globalStyles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <ArrowLeft size={24} color="#1f2937" strokeWidth={2} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Booking</Text>
+        <Text style={globalStyles.headerTitle}>Create Booking</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.providerCard}>
-          <Text style={styles.cardTitle}>Service Provider</Text>
-          <Text style={styles.providerName}>{provider.users?.full_name}</Text>
-          <Text style={styles.providerRate}>₹{provider.hourly_rate}/hour</Text>
+      <ScrollView style={globalStyles.content} showsVerticalScrollIndicator={false}>
+        <View style={globalStyles.providerCard}>
+          <Text style={globalStyles.cardTitle}>Service Provider</Text>
+          <Text style={globalStyles.providerName}>{provider.users?.full_name}</Text>
+          <Text style={globalStyles.providerRate}>₹{provider.hourly_rate}/hour</Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Date & Time</Text>
+        <View style={globalStyles.section}>
+          <Text style={globalStyles.sectionTitle}>Date & Time</Text>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Service Date *</Text>
-            <View style={styles.inputWrapper}>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Service Date *</Text>
+            <View style={globalStyles.inputWrapper}>
               <Calendar size={20} color="#9ca3af" strokeWidth={2} />
               <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="YYYY-MM-DD"
                 value={date}
                 onChangeText={setDate}
@@ -152,12 +152,12 @@ export default function BookingCreate() {
             </View>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Service Time *</Text>
-            <View style={styles.inputWrapper}>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Service Time *</Text>
+            <View style={globalStyles.inputWrapper}>
               <Clock size={20} color="#9ca3af" strokeWidth={2} />
               <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="HH:MM"
                 value={time}
                 onChangeText={setTime}
@@ -166,22 +166,22 @@ export default function BookingCreate() {
             </View>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Duration (minutes) *</Text>
-            <View style={styles.durationContainer}>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Duration (minutes) *</Text>
+            <View style={globalStyles.durationContainer}>
               {[30, 60, 90, 120].map((min) => (
                 <TouchableOpacity
                   key={min}
                   style={[
-                    styles.durationButton,
-                    duration === min.toString() && styles.durationButtonActive,
+                    globalStyles.durationButton,
+                    duration === min.toString() && globalStyles.durationButtonActive,
                   ]}
                   onPress={() => setDuration(min.toString())}
                 >
                   <Text
                     style={[
-                      styles.durationButtonText,
-                      duration === min.toString() && styles.durationButtonTextActive,
+                      globalStyles.durationButtonText,
+                      duration === min.toString() && globalStyles.durationButtonTextActive,
                     ]}
                   >
                     {min}m
@@ -192,15 +192,15 @@ export default function BookingCreate() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location & Details</Text>
+        <View style={globalStyles.section}>
+          <Text style={globalStyles.sectionTitle}>Location & Details</Text>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Service Address *</Text>
-            <View style={styles.inputWrapper}>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Service Address *</Text>
+            <View style={globalStyles.inputWrapper}>
               <MapPin size={20} color="#9ca3af" strokeWidth={2} />
               <TextInput
-                style={styles.input}
+                style={globalStyles.input}
                 placeholder="Enter service address"
                 value={address}
                 onChangeText={setAddress}
@@ -209,13 +209,13 @@ export default function BookingCreate() {
             </View>
           </View>
 
-          <View style={styles.formGroup}>
-            <View style={styles.labelWithCounter}>
-              <Text style={styles.label}>Service Description</Text>
-              <Text style={styles.charCounter}>{description.length}/500</Text>
+          <View style={globalStyles.formGroup}>
+            <View style={globalStyles.labelWithCounter}>
+              <Text style={globalStyles.label}>Service Description</Text>
+              <Text style={globalStyles.charCounter}>{description.length}/500</Text>
             </View>
             <TextInput
-              style={[styles.textArea]}
+              style={[globalStyles.textArea]}
               placeholder="Describe the service needed..."
               value={description}
               onChangeText={setDescription}
@@ -227,300 +227,57 @@ export default function BookingCreate() {
           </View>
         </View>
 
-        <View style={styles.priceCard}>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Service Rate</Text>
-            <Text style={styles.priceValue}>₹{provider.hourly_rate}/hour</Text>
+        <View style={globalStyles.priceCard}>
+          <View style={globalStyles.priceRow}>
+            <Text style={globalStyles.priceLabel}>Service Rate</Text>
+            <Text style={globalStyles.priceValue}>₹{provider.hourly_rate}/hour</Text>
           </View>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Duration</Text>
-            <Text style={styles.priceValue}>{duration} minutes</Text>
+          <View style={globalStyles.priceRow}>
+            <Text style={globalStyles.priceLabel}>Duration</Text>
+            <Text style={globalStyles.priceValue}>{duration} minutes</Text>
           </View>
-          <View style={styles.priceDivider} />
-          <View style={styles.priceRow}>
-            <Text style={styles.totalLabel}>Estimated Total</Text>
-            <Text style={styles.totalValue}>₹{estimatedPrice.toFixed(0)}</Text>
+          <View style={globalStyles.priceDivider} />
+          <View style={globalStyles.priceRow}>
+            <Text style={globalStyles.totalLabel}>Estimated Total</Text>
+            <Text style={globalStyles.totalValue}>₹{estimatedPrice.toFixed(0)}</Text>
           </View>
         </View>
 
-        <View style={styles.note}>
-          <Text style={styles.noteText}>
+        <View style={globalStyles.note}>
+          <Text style={globalStyles.noteText}>
             This is an estimated price. Final price may vary based on actual service time and
             complexity.
           </Text>
         </View>
 
-        <View style={styles.policyCard}>
-          <Text style={styles.policyTitle}>Cancellation Policy</Text>
-          <Text style={styles.policyText}>• Free cancellation: Up to 4 hours before service</Text>
-          <Text style={styles.policyText}>• 50% charge: 2-4 hours before service</Text>
-          <Text style={styles.policyText}>• 100% charge: Less than 2 hours before service</Text>
+        <View style={globalStyles.policyCard}>
+          <Text style={globalStyles.policyTitle}>Cancellation Policy</Text>
+          <Text style={globalStyles.policyText}>• Free cancellation: Up to 4 hours before service</Text>
+          <Text style={globalStyles.policyText}>• 50% charge: 2-4 hours before service</Text>
+          <Text style={globalStyles.policyText}>• 100% charge: Less than 2 hours before service</Text>
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={globalStyles.footer}>
         <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
+          style={[globalStyles.button, globalStyles.cancelButton]}
           onPress={() => router.back()}
           disabled={creating}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={globalStyles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, styles.bookButton, creating && styles.buttonDisabled]}
+          style={[globalStyles.button, globalStyles.bookButton, creating && globalStyles.buttonDisabled]}
           onPress={handleCreateBooking}
           disabled={creating}
         >
           {creating ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text style={styles.bookButtonText}>Book Service</Text>
+            <Text style={globalStyles.bookButtonText}>Book Service</Text>
           )}
         </TouchableOpacity>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  providerCard: {
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    padding: 16,
-    marginBottom: 20,
-  },
-  cardTitle: {
-    fontSize: 12,
-    color: '#0c4a6e',
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  providerName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  providerRate: {
-    fontSize: 14,
-    color: '#2563eb',
-    fontWeight: '600',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 12,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  labelWithCounter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  charCounter: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 44,
-    gap: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: '#1f2937',
-  },
-  durationContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  durationButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-  },
-  durationButtonActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-  durationButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  durationButtonTextActive: {
-    color: '#ffffff',
-  },
-  textArea: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#1f2937',
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  priceCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 14,
-    marginBottom: 16,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  priceLabel: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  priceValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  priceDivider: {
-    height: 1,
-    backgroundColor: '#e5e7eb',
-    marginVertical: 8,
-  },
-  totalLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2563eb',
-  },
-  note: {
-    backgroundColor: '#fef3c7',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 20,
-  },
-  noteText: {
-    fontSize: 12,
-    color: '#78350f',
-    lineHeight: 16,
-  },
-  policyCard: {
-    backgroundColor: '#f0f9ff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bae6fd',
-    padding: 12,
-    marginBottom: 20,
-  },
-  policyTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#0c4a6e',
-    marginBottom: 8,
-  },
-  policyText: {
-    fontSize: 11,
-    color: '#0369a1',
-    lineHeight: 18,
-    marginBottom: 2,
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  cancelButton: {
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  bookButton: {
-    backgroundColor: '#2563eb',
-  },
-  bookButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#1f2937',
-  },
-});
