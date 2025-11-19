@@ -7,6 +7,14 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import ForgotPasswordModal from './components/ForgotPasswordModal';
 import Icon from '../../components/AppIcon';
+import {
+  loginWithEmail,
+  registerWithEmail,
+  requestPasswordReset,
+  signOutCurrentUser,
+  fetchCurrentUser,
+} from '../../services/authService';
+import { onAuthStateChanged } from '../../lib/firebase';
 
 const Authentication = () => {
   const navigate = useNavigate();
@@ -15,38 +23,63 @@ const Authentication = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [user, setUser] = useState(null);
-
-  // Mock credentials for different roles
-  const mockCredentials = {
-    customer: { email: 'customer@example.com', password: 'customer123' },
-    provider: { email: 'provider@example.com', password: 'provider123' },
-    admin: { email: 'admin@example.com', password: 'admin123' }
-  };
+  const [authError, setAuthError] = useState('');
+  const [registerError, setRegisterError] = useState('');
+  const [passwordResetMessage, setPasswordResetMessage] = useState('');
 
   useEffect(() => {
-    // Check if user is already logged in
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setUser(userData);
-      redirectToRoleDashboard(userData?.role);
-    }
+    setIsLoading(true);
+    const unsubscribe = onAuthStateChanged(async (firebaseUser) => {
+      if (!firebaseUser) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
 
-    // Set tab based on URL parameter
+      try {
+        const profile = await fetchCurrentUser();
+        setUser(
+          profile || {
+            id: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firebaseUser.displayName,
+            role: 'customer',
+          }
+        );
+      } catch (error) {
+        console.warn('Unable to load user profile', error);
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName,
+          role: 'customer',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const tab = urlParams?.get('tab');
     if (tab === 'register') {
       setActiveTab('register');
     }
-  }, [location]);
+  }, [location.search]);
 
   const redirectToRoleDashboard = (role) => {
     switch (role) {
-      case 'customer':navigate('/landing-home');
+      case 'customer':
+        navigate('/landing-home');
         break;
-      case 'provider':navigate('/provider-profile');
+      case 'provider':
+        navigate('/provider-profile');
         break;
-      case 'admin':navigate('/landing-home'); // Admin dashboard would be here
+      case 'admin':
+        navigate('/landing-home'); // Admin dashboard would be here
         break;
       default:
         navigate('/landing-home');
@@ -54,114 +87,46 @@ const Authentication = () => {
   };
 
   const handleLogin = async (loginData) => {
+    if (loginData?.socialProvider) {
+      setAuthError('Social login will be available soon. Please continue with email and password.');
+      return;
+    }
+
     setIsLoading(true);
+    setAuthError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Check credentials
-      let authenticatedUser = null;
-
-      if (loginData?.socialProvider) {
-        // Mock social login
-        authenticatedUser = {
-          id: Date.now(),
-          email: loginData?.email,
-          name: 'Social User',
-          role: 'customer',
-          loginMethod: loginData?.socialProvider,
-          avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_14588f7f1-1763295690005.png",
-          avatarAlt: 'Professional headshot of man with short brown hair in casual shirt'
-        };
-      } else {
-        // Check mock credentials
-        const credentialMatch = Object.entries(mockCredentials)?.find(([role, creds]) =>
-        creds?.email === loginData?.email && creds?.password === loginData?.password
-        );
-
-        if (credentialMatch) {
-          const [role] = credentialMatch;
-          authenticatedUser = {
-            id: Date.now(),
-            email: loginData?.email,
-            name: `${role?.charAt(0)?.toUpperCase() + role?.slice(1)} User`,
-            role: role,
-            loginMethod: 'email',
-            avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_172fcd53a-1763299680950.png",
-            avatarAlt: 'Professional headshot of man with dark hair in business attire'
-          };
-        } else {
-          throw new Error('Invalid email or password. Please check your credentials and try again.');
-        }
-      }
-
-      if (authenticatedUser) {
-        // Save user data
-        localStorage.setItem('user', JSON.stringify(authenticatedUser));
-        localStorage.setItem('authToken', 'mock-jwt-token-' + Date.now());
-
-        if (loginData?.rememberMe) {
-          localStorage.setItem('rememberMe', 'true');
-        }
-
-        setUser(authenticatedUser);
-        redirectToRoleDashboard(authenticatedUser?.role);
-      }
+      const { user: authenticatedUser } = await loginWithEmail(loginData?.email, loginData?.password);
+      setUser(authenticatedUser);
+      redirectToRoleDashboard(authenticatedUser?.role);
     } catch (error) {
-      alert(error?.message);
+      setAuthError(error?.message || 'Unable to sign in. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRegister = async (registerData) => {
+    if (registerData?.socialProvider) {
+      setRegisterError('Social signup will be available soon. Please use email and password.');
+      return;
+    }
+
     setIsLoading(true);
+    setRegisterError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Validate OTP if phone verification was used
-      if (registerData?.otp && registerData?.otp !== '123456') {
-        throw new Error('Invalid OTP. Please enter 123456 for demo purposes.');
-      }
-
-      let newUser = null;
-
-      if (registerData?.socialProvider) {
-        // Mock social registration
-        newUser = {
-          id: Date.now(),
-          email: registerData?.email,
-          name: registerData?.name,
-          role: registerData?.role,
-          loginMethod: registerData?.socialProvider,
-          avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_103b528db-1763293982935.png",
-          avatarAlt: 'Professional headshot of woman with long brown hair smiling'
-        };
-      } else {
-        // Regular registration
-        newUser = {
-          id: Date.now(),
-          email: registerData?.email,
-          name: registerData?.name,
-          phone: registerData?.phone,
-          role: registerData?.role,
-          loginMethod: 'email',
-          avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1253f34e5-1763292117062.png",
-          avatarAlt: 'Professional headshot of man with beard in casual shirt'
-        };
-      }
-
-      // Save user data
-      localStorage.setItem('user', JSON.stringify(newUser));
-      localStorage.setItem('authToken', 'mock-jwt-token-' + Date.now());
-
+      const { user: newUser } = await registerWithEmail({
+        name: registerData?.name,
+        email: registerData?.email,
+        password: registerData?.password,
+        role: registerData?.role,
+        phone: registerData?.phone,
+      });
       setUser(newUser);
       redirectToRoleDashboard(newUser?.role);
     } catch (error) {
-      alert(error?.message);
+      setRegisterError(error?.message || 'Unable to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -169,28 +134,26 @@ const Authentication = () => {
 
   const handleForgotPassword = () => {
     setShowForgotPassword(true);
+    setPasswordResetMessage('');
   };
 
   const handleForgotPasswordSubmit = async (email) => {
     setIsLoading(true);
+    setPasswordResetMessage('');
+    setAuthError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Mock success - in real app, this would send an email
-      console.log('Password reset email sent to:', email);
+      await requestPasswordReset(email);
+      setPasswordResetMessage('Password reset link sent! Please check your inbox.');
     } catch (error) {
-      alert('Failed to send reset email. Please try again.');
+      setAuthError(error?.message || 'Unable to send reset link.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('rememberMe');
+    signOutCurrentUser();
     setUser(null);
     navigate('/authentication');
   };
@@ -212,6 +175,11 @@ const Authentication = () => {
               {activeTab === 'login' ? 'Sign in to your account to continue' : 'Create your account to get started'
               }
             </p>
+            {passwordResetMessage && (
+              <div className="mt-4 rounded-md border border-success/30 bg-success/5 px-4 py-3 text-sm text-success">
+                {passwordResetMessage}
+              </div>
+            )}
           </div>
 
           <div className="bg-card rounded-lg shadow-elevation-md border border-border p-6">
@@ -221,28 +189,16 @@ const Authentication = () => {
             <LoginForm
               onLogin={handleLogin}
               onForgotPassword={handleForgotPassword}
-              isLoading={isLoading} /> :
+              isLoading={isLoading}
+              errorMessage={authError} /> :
 
 
             <RegisterForm
               onRegister={handleRegister}
-              isLoading={isLoading} />
+              isLoading={isLoading}
+              errorMessage={registerError} />
 
             }
-          </div>
-
-          {/* Mock Credentials Info */}
-          <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
-            <h3 className="text-sm font-medium text-foreground mb-2 flex items-center">
-              <Icon name="Info" size={16} className="mr-2" />
-              Demo Credentials
-            </h3>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div><strong>Customer:</strong> customer@example.com / customer123</div>
-              <div><strong>Provider:</strong> provider@example.com / provider123</div>
-              <div><strong>Admin:</strong> admin@example.com / admin123</div>
-              <div><strong>OTP:</strong> 123456</div>
-            </div>
           </div>
         </div>
       </main>

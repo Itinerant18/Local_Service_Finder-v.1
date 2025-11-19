@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Header from '../../components/ui/Header';
 import BookingCard from './components/BookingCard';
 import ReviewCard from './components/ReviewCard';
@@ -9,6 +10,7 @@ import FilterBar from './components/FilterBar';
 import EmptyState from './components/EmptyState';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import { fetchCustomerDashboard } from '../../services/dashboardService';
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -16,220 +18,20 @@ const CustomerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date-desc');
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['customer-dashboard'],
+    queryFn: fetchCustomerDashboard,
+    staleTime: 1000 * 60,
+  });
 
-  // Mock data
-  const mockBookings = [
-  {
-    id: 'BK001',
-    provider: {
-      id: 'PR001',
-      name: 'Rajesh Kumar',
-      avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_13867bc71-1763291763087.png",
-      avatarAlt: 'Professional headshot of Indian man with short black hair in white shirt',
-      rating: 4.8,
-      reviewCount: 127,
-      phone: '+91 98765 43210'
-    },
-    service: {
-      id: 'SV001',
-      name: 'Plumbing Repair',
-      category: 'Home Maintenance'
-    },
-    status: 'confirmed',
-    scheduledDate: '2025-11-20',
-    scheduledTime: '10:00',
-    address: 'Flat 302, Sunrise Apartments, Bandra West, Mumbai',
-    totalAmount: 1500,
-    hasReview: false,
-    createdAt: '2025-11-15T10:30:00Z'
-  },
-  {
-    id: 'BK002',
-    provider: {
-      id: 'PR002',
-      name: 'Priya Sharma',
-      avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1dc1e6e21-1763293673531.png",
-      avatarAlt: 'Professional headshot of Indian woman with long black hair in blue blazer',
-      rating: 4.9,
-      reviewCount: 89,
-      phone: '+91 87654 32109'
-    },
-    service: {
-      id: 'SV002',
-      name: 'House Cleaning',
-      category: 'Cleaning Services'
-    },
-    status: 'in-progress',
-    scheduledDate: '2025-11-18',
-    scheduledTime: '14:00',
-    address: 'Villa 15, Green Valley Society, Pune',
-    totalAmount: 2500,
-    hasReview: false,
-    createdAt: '2025-11-10T15:45:00Z'
-  },
-  {
-    id: 'BK003',
-    provider: {
-      id: 'PR003',
-      name: 'Amit Patel',
-      avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_18d825848-1763291877251.png",
-      avatarAlt: 'Professional headshot of Indian man with beard in grey shirt',
-      rating: 4.7,
-      reviewCount: 156,
-      phone: '+91 76543 21098'
-    },
-    service: {
-      id: 'SV003',
-      name: 'Electrical Wiring',
-      category: 'Electrical Services'
-    },
-    status: 'completed',
-    scheduledDate: '2025-11-10',
-    scheduledTime: '09:30',
-    address: 'Office 204, Tech Park, Whitefield, Bangalore',
-    totalAmount: 3200,
-    hasReview: true,
-    createdAt: '2025-11-05T11:20:00Z'
-  },
-  {
-    id: 'BK004',
-    provider: {
-      id: 'PR004',
-      name: 'Sunita Reddy',
-      avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1fdaaf983-1763295802198.png",
-      avatarAlt: 'Professional headshot of Indian woman with shoulder-length hair in white top',
-      rating: 4.6,
-      reviewCount: 203,
-      phone: '+91 65432 10987'
-    },
-    service: {
-      id: 'SV004',
-      name: 'AC Repair',
-      category: 'Appliance Repair'
-    },
-    status: 'completed',
-    scheduledDate: '2025-11-08',
-    scheduledTime: '16:00',
-    address: 'House 45, Sector 12, Noida',
-    totalAmount: 1800,
-    hasReview: false,
-    createdAt: '2025-11-03T09:15:00Z'
-  },
-  {
-    id: 'BK005',
-    provider: {
-      id: 'PR005',
-      name: 'Vikram Singh',
-      avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1cdc87418-1763294586674.png",
-      avatarAlt: 'Professional headshot of Indian man with mustache in blue shirt',
-      rating: 4.5,
-      reviewCount: 78,
-      phone: '+91 54321 09876'
-    },
-    service: {
-      id: 'SV005',
-      name: 'Painting Work',
-      category: 'Home Improvement'
-    },
-    status: 'cancelled',
-    scheduledDate: '2025-11-12',
-    scheduledTime: '11:00',
-    address: 'Apartment 8B, Royal Heights, Gurgaon',
-    totalAmount: 4500,
-    hasReview: false,
-    createdAt: '2025-10-28T14:30:00Z'
-  }];
-
-
-  const mockReviews = [
-  {
-    id: 'RV001',
-    provider: {
-      id: 'PR003',
-      name: 'Amit Patel',
-      avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_18d825848-1763291877251.png",
-      avatarAlt: 'Professional headshot of Indian man with beard in grey shirt'
-    },
-    service: {
-      id: 'SV003',
-      name: 'Electrical Wiring'
-    },
-    rating: 5,
-    comment: `Excellent work by Amit! He completed the electrical wiring for my office space professionally and efficiently. The work was done on time and within budget. Highly recommend his services for any electrical work.`,
-    createdAt: '2025-11-11T16:45:00Z',
-    images: [
-    {
-      url: "https://img.rocket.new/generatedImages/rocket_gen_img_1f465e835-1763449224000.png",
-      alt: 'Completed electrical wiring installation in modern office space'
-    },
-    {
-      url: "https://img.rocket.new/generatedImages/rocket_gen_img_19bb73aef-1763449222640.png",
-      alt: 'Professional electrical panel installation with proper labeling'
-    }]
-
-  },
-  {
-    id: 'RV002',
-    provider: {
-      id: 'PR006',
-      name: 'Meera Joshi',
-      avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_12e0ab935-1763295854981.png",
-      avatarAlt: 'Professional headshot of Indian woman with curly hair in green top'
-    },
-    service: {
-      id: 'SV006',
-      name: 'Interior Design Consultation'
-    },
-    rating: 4,
-    comment: `Good consultation session with Meera. She provided valuable insights for my living room redesign. The suggestions were practical and within my budget. Would consider booking her services again for the actual implementation.`,
-    createdAt: '2025-11-05T12:30:00Z',
-    images: []
-  }];
-
-
-  const mockStats = {
-    totalBookings: 12,
-    activeBookings: 2,
-    completedBookings: 8,
-    totalSpent: 28500,
-    favoriteProviders: 5,
-    reviewsWritten: 6
-  };
-
-  const mockFavoriteProviders = [
-  {
-    id: 'PR001',
-    name: 'Rajesh Kumar',
-    service: 'Plumbing Services',
-    rating: 4.8
-  },
-  {
-    id: 'PR002',
-    name: 'Priya Sharma',
-    service: 'Cleaning Services',
-    rating: 4.9
-  },
-  {
-    id: 'PR003',
-    name: 'Amit Patel',
-    service: 'Electrical Services',
-    rating: 4.7
-  }];
-
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const bookings = data?.recentBookings || [];
+  const dashboardStats = data?.stats || {};
+  const reviews = data?.recentReviews || [];
+  const favoriteProviders = data?.recommendedProviders || [];
 
   // Filter and sort bookings
   const getFilteredBookings = () => {
-    let filtered = [...mockBookings];
+    let filtered = [...bookings];
 
     // Filter by tab
     if (activeTab === 'active') {
@@ -322,26 +124,40 @@ const CustomerDashboard = () => {
     setSortBy('date-desc');
   };
 
-  const tabs = [
-  {
-    id: 'active',
-    label: 'Active Bookings',
-    count: mockBookings?.filter((b) => b?.status === 'confirmed' || b?.status === 'in-progress')?.length,
-    icon: 'Clock'
-  },
-  {
-    id: 'history',
-    label: 'Booking History',
-    count: mockBookings?.filter((b) => b?.status === 'completed' || b?.status === 'cancelled')?.length,
-    icon: 'History'
-  },
-  {
-    id: 'reviews',
-    label: 'My Reviews',
-    count: mockReviews?.length,
-    icon: 'Star'
-  }];
+  const tabs = useMemo(() => ([
+    {
+      id: 'active',
+      label: 'Active Bookings',
+      count: bookings?.filter((b) => b?.status === 'confirmed' || b?.status === 'in-progress')?.length || 0,
+      icon: 'Clock'
+    },
+    {
+      id: 'history',
+      label: 'Booking History',
+      count: bookings?.filter((b) => b?.status === 'completed' || b?.status === 'cancelled')?.length || 0,
+      icon: 'History'
+    },
+    {
+      id: 'reviews',
+      label: 'My Reviews',
+      count: reviews?.length || 0,
+      icon: 'Star'
+    }
+  ]), [bookings, reviews]);
 
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="rounded-md border border-error/30 bg-error/5 px-4 py-6">
+            <h2 className="text-lg font-semibold text-error mb-2">Unable to load dashboard</h2>
+            <p className="text-sm text-slate-700">{error?.message || 'Please try again later.'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -365,8 +181,8 @@ const CustomerDashboard = () => {
             </div>
           </div>
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   return (
@@ -383,7 +199,7 @@ const CustomerDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Total Bookings"
-            value={mockStats?.totalBookings}
+            value={dashboardStats?.totalBookings || 0}
             icon="Calendar"
             color="blue"
             trend="up"
@@ -391,7 +207,7 @@ const CustomerDashboard = () => {
 
           <StatsCard
             title="Active Bookings"
-            value={mockStats?.activeBookings}
+            value={dashboardStats?.activeBookings || 0}
             icon="Clock"
             color="amber"
             trend={undefined}
@@ -399,7 +215,7 @@ const CustomerDashboard = () => {
 
           <StatsCard
             title="Total Spent"
-            value={`₹${mockStats?.totalSpent?.toLocaleString('en-IN')}`}
+            value={`₹${(dashboardStats?.totalSpent || 0)?.toLocaleString('en-IN')}`}
             icon="IndianRupee"
             color="green"
             trend="up"
@@ -407,7 +223,7 @@ const CustomerDashboard = () => {
 
           <StatsCard
             title="Reviews Written"
-            value={mockStats?.reviewsWritten}
+            value={dashboardStats?.reviewsWritten || 0}
             icon="Star"
             color="purple"
             trend={undefined}
@@ -460,7 +276,7 @@ const CustomerDashboard = () => {
             <div className="space-y-6">
               {activeTab === 'reviews' ?
               // Reviews Tab
-              mockReviews?.length > 0 ? mockReviews?.map((review) =>
+              reviews?.length > 0 ? reviews?.map((review) =>
               <ReviewCard
                 key={review?.id}
                 review={review}
@@ -470,7 +286,7 @@ const CustomerDashboard = () => {
               ) : <EmptyState type="reviews" /> :
 
               // Bookings Tabs
-              filteredBookings?.length > 0 ? filteredBookings?.map((booking) =>
+              getFilteredBookings()?.length > 0 ? getFilteredBookings()?.map((booking) =>
               <BookingCard
                 key={booking?.id}
                 booking={booking}
@@ -491,7 +307,7 @@ const CustomerDashboard = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             <QuickActions
-              favoriteProviders={mockFavoriteProviders}
+              favoriteProviders={favoriteProviders}
               onRebookProvider={handleRebookProvider} />
 
 
@@ -507,12 +323,12 @@ const CustomerDashboard = () => {
                 
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Favorite Providers</span>
-                  <span className="text-sm font-medium text-slate-900">{mockStats?.favoriteProviders}</span>
+                  <span className="text-sm font-medium text-slate-900">{dashboardStats?.favoriteProviders || 0}</span>
                 </div>
                 
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Completed Services</span>
-                  <span className="text-sm font-medium text-slate-900">{mockStats?.completedBookings}</span>
+                  <span className="text-sm font-medium text-slate-900">{dashboardStats?.completedBookings || 0}</span>
                 </div>
                 
                 <div className="pt-4 border-t border-slate-200">

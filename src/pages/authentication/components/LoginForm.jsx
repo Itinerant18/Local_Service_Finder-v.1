@@ -4,8 +4,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
-
-const LoginForm = ({ onLogin, onForgotPassword, isLoading }) => {
+const LoginForm = ({ onLogin, onForgotPassword, isLoading, errorMessage }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -63,6 +62,11 @@ const LoginForm = ({ onLogin, onForgotPassword, isLoading }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {errorMessage && (
+        <div className="rounded-md border border-error/40 bg-error/5 px-4 py-3 text-sm text-error">
+          {errorMessage}
+        </div>
+      )}
       <div className="space-y-4">
         <Input
           label="Email Address"

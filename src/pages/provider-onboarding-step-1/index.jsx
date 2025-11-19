@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import Header from '../../components/ui/Header';
 import ProgressIndicator from './components/ProgressIndicator';
 import BusinessInfoForm from './components/BusinessInfoForm';
@@ -7,6 +8,8 @@ import DocumentUpload from './components/DocumentUpload';
 import TermsAcceptance from './components/TermsAcceptance';
 import NavigationControls from './components/NavigationControls';
 import Icon from '../../components/AppIcon';
+import { onboardProvider } from '../../services/providerService';
+import { auth } from '../../lib/firebase';
 
 const ProviderOnboardingStep1 = () => {
   const navigate = useNavigate();
@@ -35,6 +38,51 @@ const ProviderOnboardingStep1 = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const onboardingMutation = useMutation({
+    mutationFn: onboardProvider,
+  });
+
+  const buildOnboardingPayload = (status = 'submitted') => {
+    const currentUserId = auth.currentUser?.uid;
+    if (!currentUserId) {
+      throw new Error('Please sign in before completing onboarding.');
+    }
+
+    const payload = new FormData();
+    const jsonPayload = {
+      userId: currentUserId,
+      businessName: formData?.businessName,
+      ownerName: formData?.ownerName,
+      businessType: formData?.businessType,
+      phone: formData?.phone,
+      address: formData?.address,
+      serviceCategory: formData?.serviceCategory,
+      description: formData?.description,
+      acceptances: {
+        terms: formData?.acceptTerms,
+        privacy: formData?.acceptPrivacy,
+        commission: formData?.acceptCommission,
+        verification: formData?.acceptVerification,
+      },
+      status,
+    };
+
+    payload.append('payload', JSON.stringify(jsonPayload));
+
+    if (formData?.documents?.businessLicense) {
+      payload.append('documents[businessLicense]', formData?.documents?.businessLicense);
+    }
+    if (formData?.documents?.identityProof) {
+      payload.append('documents[identityProof]', formData?.documents?.identityProof);
+    }
+    if (formData?.documents?.addressProof) {
+      payload.append('documents[addressProof]', formData?.documents?.addressProof);
+    }
+
+    return payload;
+  };
 
   // Auto-save functionality
   useEffect(() => {
@@ -70,7 +118,7 @@ const ProviderOnboardingStep1 = () => {
 
     if (!formData?.phone) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^\d{10}$/?.test(formData?.phone)) {
+    } else if (!/^\d{10}$/.test(formData?.phone)) {
       newErrors.phone = 'Please enter a valid 10-digit phone number';
     }
 
@@ -123,18 +171,17 @@ const ProviderOnboardingStep1 = () => {
   };
 
   const handleSaveDraft = async () => {
+    setErrors((prev) => ({ ...prev, submit: '' }));
+    setSuccessMessage('');
     setIsSaving(true);
     try {
-      // Simulate API call to save draft
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Save to localStorage as backup
-      localStorage.setItem('providerOnboardingStep1', JSON.stringify(formData));
-      
+      const payload = buildOnboardingPayload('draft');
+      await onboardingMutation.mutateAsync(payload);
       setHasUnsavedChanges(false);
-      console.log('Draft saved successfully');
+      setSuccessMessage('Draft saved successfully. You can continue later.');
     } catch (error) {
       console.error('Failed to save draft:', error);
+      setErrors((prev) => ({ ...prev, submit: error?.message || 'Failed to save draft. Please try again.' }));
     } finally {
       setIsSaving(false);
     }
@@ -150,19 +197,18 @@ const ProviderOnboardingStep1 = () => {
       return;
     }
 
+    setErrors((prev) => ({ ...prev, submit: '' }));
+    setSuccessMessage('');
     setIsLoading(true);
     try {
-      // Simulate API call to save step 1 data
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Save completed step 1 data
-      localStorage.setItem('providerOnboardingStep1Complete', JSON.stringify(formData));
-      
-      // Navigate to step 2
+      const payload = buildOnboardingPayload('submitted');
+      await onboardingMutation.mutateAsync(payload);
+      setHasUnsavedChanges(false);
+      setSuccessMessage('Business information submitted successfully.');
       navigate('/provider-onboarding-step-2');
     } catch (error) {
       console.error('Failed to save and continue:', error);
-      setErrors({ submit: 'Failed to save information. Please try again.' });
+      setErrors({ submit: error?.message || 'Failed to save information. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -182,19 +228,19 @@ const ProviderOnboardingStep1 = () => {
     }
   }, []);
 
-  const canContinue = formData?.businessName && 
-                     formData?.ownerName && 
-                     formData?.businessType && 
-                     formData?.phone && 
-                     formData?.address && 
-                     formData?.serviceCategory && 
-                     formData?.description && 
-                     formData?.documents?.businessLicense && 
-                     formData?.documents?.identityProof && 
-                     formData?.documents?.addressProof && 
-                     formData?.acceptTerms && 
-                     formData?.acceptPrivacy && 
-                     formData?.acceptCommission && 
+  const canContinue = formData?.businessName &&
+                     formData?.ownerName &&
+                     formData?.businessType &&
+                     formData?.phone &&
+                     formData?.address &&
+                     formData?.serviceCategory &&
+                     formData?.description &&
+                     formData?.documents?.businessLicense &&
+                     formData?.documents?.identityProof &&
+                     formData?.documents?.addressProof &&
+                     formData?.acceptTerms &&
+                     formData?.acceptPrivacy &&
+                     formData?.acceptCommission &&
                      formData?.acceptVerification;
 
   const sections = [
@@ -289,6 +335,14 @@ const ProviderOnboardingStep1 = () => {
               <div className="flex items-center space-x-2">
                 <Icon name="AlertCircle" size={20} className="text-error" />
                 <p className="text-sm text-error font-medium">{errors?.submit}</p>
+              </div>
+            </div>
+          )}
+          {successMessage && (
+            <div className="mt-6 p-4 bg-success/10 border border-success/20 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Icon name="CheckCircle" size={20} className="text-success" />
+                <p className="text-sm text-success font-medium">{successMessage}</p>
               </div>
             </div>
           )}

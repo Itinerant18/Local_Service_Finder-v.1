@@ -7,26 +7,41 @@ import ServiceCategoryGrid from './components/ServiceCategoryGrid';
 import FeaturedProviders from './components/FeaturedProviders';
 import TestimonialsSection from './components/TestimonialsSection';
 import CallToActionSection from './components/CallToActionSection';
+import { onAuthStateChanged } from '../../lib/firebase';
+import { signOutCurrentUser, fetchCurrentUser } from '../../services/authService';
 
 const LandingHome = () => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Check for existing user session
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        console.error('Error parsing saved user data:', error);
-        localStorage.removeItem('user');
+    const unsubscribe = onAuthStateChanged(async (firebaseUser) => {
+      if (!firebaseUser) {
+        setUser(null);
+        return;
       }
-    }
+
+      try {
+        const profile = await fetchCurrentUser();
+        setUser(profile || {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName,
+        });
+      } catch (error) {
+        console.warn('Unable to load user profile', error);
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName,
+        });
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleSignOut = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('authToken');
+    signOutCurrentUser();
     setUser(null);
   };
 

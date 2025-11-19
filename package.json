@@ -2,7 +2,6 @@
   "name": "local-service-finder",
   "version": "0.1.0",
   "private": true,
-<<<<<<< HEAD
   "rocketCritical": {
     "dependencies": [
       "@dhiwise/component-tagger",
@@ -21,7 +20,7 @@
       "postcss"
     ],
     "scripts": [
-      "start",
+      "dev",
       "build",
       "serve"
     ],
@@ -32,6 +31,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@reduxjs/toolkit": "^2.6.1",
     "@tailwindcss/forms": "^0.5.7",
+    "@tanstack/react-query": "^5.62.8",
     "@testing-library/jest-dom": "^5.15.1",
     "@testing-library/react": "^11.2.7",
     "@testing-library/user-event": "^12.8.3",
@@ -41,6 +41,7 @@
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.0.1",
+    "firebase": "^9.23.0",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.484.0",
     "react": "^18.2.0",
@@ -57,9 +58,12 @@
     "tailwindcss-fluid-type": "^2.0.7"
   },
   "scripts": {
+    "dev": "vite",
+    "dev:mock": "cross-env VITE_USE_MOCKS=true vite",
     "start": "vite",
     "build": "vite build --sourcemap",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "test": "jest"
   },
   "eslintConfig": {
     "extends": [
@@ -80,64 +84,23 @@
     ]
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-react": "^7.25.9",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/line-clamp": "^0.1.0",
     "@tailwindcss/typography": "^0.5.16",
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.2",
+    "babel-jest": "^29.7.0",
+    "cross-env": "^7.0.3",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "msw": "^2.6.7",
     "postcss": "8.4.8",
     "tailwindcss": "3.4.6",
     "vite": "5.0.0",
     "vite-tsconfig-paths": "3.6.0"
-=======
-  "scripts": {
-    "dev": "cross-env EXPO_NO_TELEMETRY=1 expo start",
-    "build:web": "expo export --platform web",
-    "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@expo/vector-icons": "^15.0.2",
-    "@lucide/lab": "^0.1.2",
-    "@react-native-async-storage/async-storage": "^1.24.0",
-    "@react-navigation/bottom-tabs": "^7.2.0",
-    "@react-navigation/native": "^7.0.14",
-    "expo": "54.0.22",
-    "expo-blur": "~15.0.7",
-    "expo-camera": "~17.0.8",
-    "expo-constants": "~18.0.9",
-    "expo-font": "~14.0.8",
-    "expo-haptics": "~15.0.7",
-    "expo-linear-gradient": "~15.0.7",
-    "expo-linking": "~8.0.8",
-    "expo-modules-core": "^3.0.24",
-    "expo-router": "~6.0.8",
-    "expo-splash-screen": "~31.0.10",
-    "expo-status-bar": "~3.0.8",
-    "expo-symbols": "~1.0.7",
-    "expo-system-ui": "~6.0.7",
-    "expo-web-browser": "~15.0.7",
-    "firebase": "^12.5.0",
-    "firebase-admin": "^13.6.0",
-    "lucide-react-native": "^0.544.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-native": "0.81.4",
-    "react-native-gesture-handler": "~2.28.0",
-    "react-native-reanimated": "~4.1.1",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0",
-    "react-native-svg": "15.12.1",
-    "react-native-url-polyfill": "^2.0.0",
-    "react-native-web": "^0.21.0",
-    "react-native-webview": "13.15.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@types/react": "~19.1.10",
-    "cross-env": "^10.1.0",
-    "typescript": "~5.9.2"
->>>>>>> 919d35e695b61f336fcaa52ef139c33e87325054
   }
 }

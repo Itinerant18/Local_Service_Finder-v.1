@@ -1,84 +1,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Icon from '../../../components/AppIcon';
+import { fetchServiceCategories } from '../../../services/categoryService';
 
 const ServiceCategoriesSection = () => {
   const navigate = useNavigate();
 
-  const serviceCategories = [
-    {
-      id: 'home-repair',
-      name: 'Home Repair',
-      description: 'Plumbing, electrical, carpentry',
-      icon: 'Wrench',
-      color: 'bg-blue-500',
-      services: ['Plumber', 'Electrician', 'Carpenter', 'Painter'],
-      providerCount: 245
-    },
-    {
-      id: 'cleaning',
-      name: 'Cleaning Services',
-      description: 'House, office, deep cleaning',
-      icon: 'Sparkles',
-      color: 'bg-green-500',
-      services: ['House Cleaning', 'Office Cleaning', 'Deep Cleaning', 'Carpet Cleaning'],
-      providerCount: 189
-    },
-    {
-      id: 'appliance',
-      name: 'Appliance Repair',
-      description: 'AC, washing machine, fridge',
-      icon: 'Zap',
-      color: 'bg-orange-500',
-      services: ['AC Repair', 'Washing Machine', 'Refrigerator', 'Microwave'],
-      providerCount: 156
-    },
-    {
-      id: 'beauty',
-      name: 'Beauty & Wellness',
-      description: 'Salon, spa, massage',
-      icon: 'Scissors',
-      color: 'bg-pink-500',
-      services: ['Hair Salon', 'Spa Services', 'Massage', 'Nail Art'],
-      providerCount: 98
-    },
-    {
-      id: 'fitness',
-      name: 'Fitness & Health',
-      description: 'Personal trainer, yoga, physiotherapy',
-      icon: 'Dumbbell',
-      color: 'bg-purple-500',
-      services: ['Personal Trainer', 'Yoga', 'Physiotherapy', 'Dietician'],
-      providerCount: 134
-    },
-    {
-      id: 'tutoring',
-      name: 'Education & Tutoring',
-      description: 'Academic, music, language',
-      icon: 'BookOpen',
-      color: 'bg-indigo-500',
-      services: ['Academic Tutor', 'Music Teacher', 'Language Coach', 'Skill Training'],
-      providerCount: 167
-    },
-    {
-      id: 'automotive',
-      name: 'Automotive Services',
-      description: 'Car wash, repair, maintenance',
-      icon: 'Car',
-      color: 'bg-red-500',
-      services: ['Car Wash', 'Auto Repair', 'Bike Service', 'Tyre Service'],
-      providerCount: 89
-    },
-    {
-      id: 'pet-care',
-      name: 'Pet Care',
-      description: 'Grooming, training, veterinary',
-      icon: 'Heart',
-      color: 'bg-teal-500',
-      services: ['Pet Grooming', 'Pet Training', 'Veterinary', 'Pet Sitting'],
-      providerCount: 67
-    }
-  ];
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['service-categories'],
+    queryFn: fetchServiceCategories,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const serviceCategories = data?.categories || [];
 
   const handleCategoryClick = (category) => {
     navigate(`/provider-listing?category=${category?.id}&services=${category?.services?.join(',')}`);
@@ -102,14 +37,28 @@ const ServiceCategoriesSection = () => {
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {serviceCategories?.map((category) => (
+          {isLoading && (
+            [...Array(4)].map((_, idx) => (
+              <div key={idx} className="bg-surface border border-border rounded-2xl p-6 animate-pulse">
+                <div className="w-14 h-14 bg-muted rounded-xl mb-4" />
+                <div className="h-4 bg-muted rounded w-2/3 mb-2" />
+                <div className="h-3 bg-muted rounded w-full mb-3" />
+                <div className="h-3 bg-muted rounded w-1/2 mb-4" />
+                <div className="space-y-2">
+                  <div className="h-3 bg-muted rounded" />
+                  <div className="h-3 bg-muted rounded w-3/4" />
+                </div>
+              </div>
+            ))
+          )}
+          {!isLoading && serviceCategories?.length > 0 && serviceCategories?.map((category) => (
             <div
               key={category?.id}
               onClick={() => handleCategoryClick(category)}
               className="group bg-surface border border-border rounded-2xl p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer"
             >
               {/* Category Icon */}
-              <div className={`w-14 h-14 ${category?.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+              <div className={`w-14 h-14 ${category?.color || 'bg-primary'} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                 <Icon name={category?.icon} size={28} color="white" />
               </div>
 

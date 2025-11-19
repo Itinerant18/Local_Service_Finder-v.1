@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../../components/ui/Header';
 import StepIndicator from './components/StepIndicator';
@@ -6,13 +6,13 @@ import ServiceSelectionStep from './components/ServiceSelectionStep';
 import DateTimeStep from './components/DateTimeStep';
 import AddressStep from './components/AddressStep';
 import ConfirmationStep from './components/ConfirmationStep';
+import { createBooking } from '../../services/bookingService';
+import Button from '../../components/ui/Button';
 
 const BookingCreation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-
-  // Booking state
   const [selectedServices, setSelectedServices] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState('');
@@ -27,132 +27,86 @@ const BookingCreation = () => {
     lng: null
   });
 
-  // Mock data
-  const availableServices = [
-  {
-    id: 'plumb-001',
-    name: 'Tap Repair & Installation',
-    description: 'Fix leaky taps, install new taps, and repair faucet mechanisms',
-    price: 299,
-    originalPrice: 399,
-    duration: 45,
-    category: 'Plumbing',
-    isPopular: true
-  },
-  {
-    id: 'plumb-002',
-    name: 'Pipe Leak Repair',
-    description: 'Detect and fix water pipe leaks, joint repairs, and pipe replacement',
-    price: 499,
-    duration: 60,
-    category: 'Plumbing',
-    isPopular: false
-  },
-  {
-    id: 'plumb-003',
-    name: 'Toilet Installation & Repair',
-    description: 'Complete toilet installation, flush mechanism repair, and seat replacement',
-    price: 799,
-    originalPrice: 999,
-    duration: 90,
-    category: 'Plumbing',
-    isPopular: true
-  },
-  {
-    id: 'plumb-004',
-    name: 'Drain Cleaning',
-    description: 'Clear blocked drains, remove clogs, and improve water flow',
-    price: 399,
-    duration: 30,
-    category: 'Plumbing',
-    isPopular: false
-  },
-  {
-    id: 'plumb-005',
-    name: 'Water Heater Service',
-    description: 'Geyser installation, repair, and maintenance services',
-    price: 699,
-    duration: 75,
-    category: 'Plumbing',
-    isPopular: true
-  },
-  {
-    id: 'plumb-006',
-    name: 'Bathroom Fitting',
-    description: 'Install shower heads, bathroom accessories, and plumbing fixtures',
-    price: 899,
-    duration: 120,
-    category: 'Plumbing',
-    isPopular: false
-  }];
-
+  const [availableServices, setAvailableServices] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesError, setServicesError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Add this block - Mock provider availability data
   const providerAvailability = {
     availableDates: [
-    new Date(),
-    new Date(Date.now() + 86400000),
-    new Date(Date.now() + 86400000 * 2),
-    new Date(Date.now() + 86400000 * 3),
-    new Date(Date.now() + 86400000 * 4),
-    new Date(Date.now() + 86400000 * 5),
-    new Date(Date.now() + 86400000 * 6)],
+      new Date(),
+      new Date(Date.now() + 86400000),
+      new Date(Date.now() + 86400000 * 2),
+      new Date(Date.now() + 86400000 * 3),
+      new Date(Date.now() + 86400000 * 4),
+      new Date(Date.now() + 86400000 * 5),
+      new Date(Date.now() + 86400000 * 6)],
 
     timeSlots: ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00']
   };
 
-  const providerInfo = {
-    id: 'provider-123',
-    name: 'Rajesh Kumar',
-    category: 'Plumbing Specialist',
-    rating: 4.8,
-    experience: 8,
-    avatar: "https://img.rocket.new/generatedImages/rocket_gen_img_1ee047f3e-1763293623246.png",
-    avatarAlt: 'Professional headshot of Indian male plumber in blue work shirt smiling at camera'
-  };
+  const providerInfo = useMemo(() => location?.state?.provider || null, [location?.state]);
 
   const steps = [
-  {
-    id: 1,
-    title: 'Services',
-    description: 'Select services'
-  },
-  {
-    id: 2,
-    title: 'Date & Time',
-    description: 'Choose appointment'
-  },
-  {
-    id: 3,
-    title: 'Address',
-    description: 'Service location'
-  },
-  {
-    id: 4,
-    title: 'Confirmation',
-    description: 'Review & pay'
-  }];
-
+    {
+      id: 1,
+      title: 'Services',
+      description: 'Select services'
+    },
+    {
+      id: 2,
+      title: 'Date & Time',
+      description: 'Choose appointment'
+    },
+    {
+      id: 3,
+      title: 'Address',
+      description: 'Service location'
+    },
+    {
+      id: 4,
+      title: 'Confirmation',
+      description: 'Review & pay'
+    }];
 
   // Get provider info from navigation state if available
   useEffect(() => {
-    const state = location?.state;
-    if (state?.providerId) {
-      // In a real app, fetch provider details using the ID
-      console.log('Provider ID:', state?.providerId);
+    async function loadServices() {
+      setServicesLoading(true);
+      setServicesError('');
+      try {
+        const response = location?.state?.services;
+        if (response?.length) {
+          setAvailableServices(response);
+        } else {
+          setAvailableServices([]);
+        }
+      } catch (error) {
+        setServicesError('Unable to load services for this provider.');
+      } finally {
+        setServicesLoading(false);
+      }
     }
+    loadServices();
   }, [location?.state]);
 
   // Step navigation handlers
   const handleServiceToggle = (serviceId) => {
     setSelectedServices((prev) =>
-    prev?.includes(serviceId) ?
-    prev?.filter((id) => id !== serviceId) :
-    [...prev, serviceId]
+      prev?.includes(serviceId) ?
+        prev?.filter((id) => id !== serviceId) :
+        [...prev, serviceId]
     );
   };
 
   const handleNextStep = () => {
+    if (currentStep === 1 && selectedServices.length === 0) {
+      setServicesError('Please select at least one service to continue.');
+      return;
+    }
     if (currentStep < steps?.length) {
       setCurrentStep((prev) => prev + 1);
     }
@@ -187,8 +141,9 @@ const BookingCreation = () => {
             selectedServices={selectedServices}
             onServiceToggle={handleServiceToggle}
             onNext={handleNextStep}
-            availableServices={availableServices} />);
-
+            availableServices={availableServices}
+            loading={servicesLoading}
+            error={servicesError} />);
 
       case 2:
         return (
@@ -201,7 +156,6 @@ const BookingCreation = () => {
             onBack={handlePrevStep}
             providerAvailability={providerAvailability} />);
 
-
       case 3:
         return (
           <AddressStep
@@ -209,7 +163,6 @@ const BookingCreation = () => {
             onAddressChange={handleAddressChange}
             onNext={handleNextStep}
             onBack={handlePrevStep} />);
-
 
       case 4:
         return (
@@ -220,8 +173,37 @@ const BookingCreation = () => {
             address={address}
             onBack={handlePrevStep}
             availableServices={availableServices}
-            providerInfo={providerInfo} />);
-
+            providerInfo={providerInfo}
+            onSubmit={async () => {
+              setSubmitError('');
+              setSubmitSuccess('');
+              setIsSubmitting(true);
+              try {
+                const payload = {
+                  providerId: providerInfo?.id,
+                  serviceIds: selectedServices,
+                  datetime: selectedDate?.toISOString(),
+                  timeSlot: selectedTime,
+                  address,
+                };
+                const result = await createBooking(payload);
+                setSubmitSuccess('Booking created successfully!');
+                navigate('/customer-dashboard', {
+                  state: {
+                    bookingSuccess: true,
+                    bookingId: result?.booking?._id || result?._id,
+                  },
+                });
+              } catch (error) {
+                setSubmitError(error?.message || 'Unable to create booking.');
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}
+            isSubmitting={isSubmitting}
+            submitError={submitError}
+            submitSuccess={submitSuccess}
+          />);
 
       default:
         return null;
@@ -231,7 +213,7 @@ const BookingCreation = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -243,16 +225,21 @@ const BookingCreation = () => {
         </div>
 
         <StepIndicator currentStep={currentStep} steps={steps} />
-        
+
         <div className="bg-surface rounded-lg border border-border p-6 lg:p-8">
+          {servicesError && currentStep === 1 && (
+            <div className="mb-4 rounded-md border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+              {servicesError}
+            </div>
+          )}
           {renderStepContent()}
         </div>
       </main>
 
       {/* Mobile spacing for bottom navigation */}
       <div className="h-20 md:hidden" />
-    </div>);
-
+    </div>
+  );
 };
 
 export default BookingCreation;
