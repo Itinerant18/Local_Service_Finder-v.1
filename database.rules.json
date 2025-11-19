@@ -1,0 +1,31 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    },
+    "service_categories": {
+      ".read": "true",
+      ".write": "auth.token.isAdmin === true"
+    },
+    "service_providers": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "$uid === auth.uid"
+      },
+      ".indexOn": ["verification_status", "category_id"]
+    },
+    "bookings": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".indexOn": ["customer_id", "provider_id"]
+    },
+    "reviews": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["provider_id", "booking_id"]
+    }
+  }
+}

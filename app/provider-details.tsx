@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getProviderById, getProviderReviews } from '@/lib/realtime-helpers';
 import {
   ArrowLeft,
   MapPin,
@@ -35,24 +35,15 @@ export default function ProviderDetails() {
     if (!id) return;
 
     try {
-      const [providerResult, reviewsResult] = await Promise.all([
-        supabase
-          .from('service_providers')
-          .select('*, users:id(full_name, profile_picture_url, city, phone_number)')
-          .eq('id', id)
-          .maybeSingle(),
-        supabase
-          .from('reviews')
-          .select('*')
-          .eq('provider_id', id)
-          .order('created_at', { ascending: false })
-          .limit(10),
+      const [providerData, reviewsData] = await Promise.all([
+        getProviderById(id as string),
+        getProviderReviews(id as string, 10),
       ]);
 
-      if (providerResult.data) {
-        setProvider(providerResult.data);
+      if (providerData) {
+        setProvider(providerData);
       }
-      setReviews(reviewsResult.data || []);
+      setReviews(reviewsData);
     } catch (error) {
       console.error('Error loading provider details:', error);
     } finally {

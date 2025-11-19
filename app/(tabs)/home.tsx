@@ -1,9 +1,11 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, ServiceProvider, ServiceCategory } from '@/lib/supabase';
+import { ServiceProvider, ServiceCategory } from '@/lib/firebase';
+import { getServiceCategories, getServiceProviders } from '@/lib/realtime-helpers';
 import { MapPin, Star } from 'lucide-react-native';
+import { globalStyles } from '@/styles/global';
 
 export default function Home() {
   const router = useRouter();
@@ -18,25 +20,17 @@ export default function Home() {
 
   const loadHomeData = async () => {
     try {
-      const [categoriesResult, providersResult] = await Promise.all([
-        supabase.from('service_categories').select('*').limit(6),
-        supabase
-          .from('service_providers')
-          .select('*, users:id(full_name, profile_picture_url)')
-          .eq('verification_status', 'verified')
-          .order('average_rating', { ascending: false })
-          .limit(5),
+      const [categories, providers] = await Promise.all([
+        getServiceCategories(),
+        getServiceProviders({
+          verificationStatus: 'verified',
+          orderByRating: true,
+          limitCount: 5,
+        }),
       ]);
 
-      if (categoriesResult.error) {
-        console.error('Categories error:', categoriesResult.error);
-      }
-      if (providersResult.error) {
-        console.error('Providers error:', providersResult.error);
-      }
-
-      setCategories(categoriesResult.data || []);
-      setFeaturedProviders(providersResult.data || []);
+      setCategories(categories);
+      setFeaturedProviders(providers);
     } catch (error) {
       console.error('Error loading home data:', error);
     } finally {
@@ -46,13 +40,13 @@ export default function Home() {
 
   const renderCategoryItem = ({ item }: { item: ServiceCategory }) => (
     <TouchableOpacity
-      style={styles.categoryCard}
+      style={globalStyles.categoryCard}
       onPress={() => router.push({ pathname: '/(tabs)/search', params: { categoryId: item.id } })}
     >
-      <View style={styles.categoryIcon}>
-        <Text style={styles.categoryIconText}>{item.icon_name?.[0] || '⚡'}</Text>
+      <View style={globalStyles.categoryIcon}>
+        <Text style={globalStyles.categoryIconText}>{item.icon_name?.[0] || '⚡'}</Text>
       </View>
-      <Text style={styles.categoryName} numberOfLines={1}>
+      <Text style={globalStyles.categoryName} numberOfLines={1}>
         {item.name}
       </Text>
     </TouchableOpacity>
@@ -60,24 +54,24 @@ export default function Home() {
 
   const renderProviderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.providerCard}
+      style={globalStyles.providerCard}
       onPress={() => router.push({ pathname: '/provider-details', params: { id: item.id } })}
     >
       <Image
         source={{ uri: item.users?.profile_picture_url || 'https://via.placeholder.com/120' }}
-        style={styles.providerImage}
+        style={globalStyles.providerImage}
       />
-      <View style={styles.providerInfo}>
-        <Text style={styles.providerName} numberOfLines={1}>
+      <View style={globalStyles.providerInfo}>
+        <Text style={globalStyles.providerName} numberOfLines={1}>
           {item.users?.full_name}
         </Text>
-        <Text style={styles.providerCategory} numberOfLines={1}>
+        <Text style={globalStyles.providerCategory} numberOfLines={1}>
           {item.category_id}
         </Text>
-        <View style={styles.ratingRow}>
+        <View style={globalStyles.ratingRow}>
           <Star size={14} color="#fbbf24" fill="#fbbf24" />
-          <Text style={styles.rating}>{item.average_rating.toFixed(1)}</Text>
-          <Text style={styles.reviewCount}>({item.total_reviews})</Text>
+          <Text style={globalStyles.rating}>{item.average_rating.toFixed(1)}</Text>
+          <Text style={globalStyles.reviewCount}>({item.total_reviews})</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -85,35 +79,35 @@ export default function Home() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={globalStyles.centerContainer}>
         <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={globalStyles.container}>
       <FlatList
         data={[1]}
         renderItem={() => (
           <>
-            <View style={styles.header}>
-              <Text style={styles.greeting}>Hello, {user?.full_name || 'Guest'}</Text>
-              <Text style={styles.subGreeting}>Find services near you</Text>
+            <View style={globalStyles.header}>
+              <Text style={globalStyles.greeting}>Hello, {user?.full_name || 'Guest'}</Text>
+              <Text style={globalStyles.subGreeting}>Find services near you</Text>
             </View>
 
             <TouchableOpacity
-              style={styles.searchBar}
+              style={globalStyles.searchBar}
               onPress={() => router.push('/(tabs)/search')}
             >
-              <Text style={styles.searchPlaceholder}>Search services...</Text>
+              <Text style={globalStyles.searchPlaceholder}>Search services...</Text>
             </TouchableOpacity>
 
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Services</Text>
+            <View style={globalStyles.section}>
+              <View style={globalStyles.sectionHeader}>
+                <Text style={globalStyles.sectionTitle}>Services</Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
-                  <Text style={styles.seeAll}>See all</Text>
+                  <Text style={globalStyles.seeAll}>See all</Text>
                 </TouchableOpacity>
               </View>
               <FlatList
@@ -122,15 +116,15 @@ export default function Home() {
                 keyExtractor={(item) => item.id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.categoryList}
+                contentContainerStyle={globalStyles.categoryList}
               />
             </View>
 
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Featured Providers</Text>
+            <View style={globalStyles.section}>
+              <View style={globalStyles.sectionHeader}>
+                <Text style={globalStyles.sectionTitle}>Featured Providers</Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/search')}>
-                  <Text style={styles.seeAll}>See all</Text>
+                  <Text style={globalStyles.seeAll}>See all</Text>
                 </TouchableOpacity>
               </View>
               <FlatList
@@ -143,148 +137,9 @@ export default function Home() {
           </>
         )}
         keyExtractor={() => 'home'}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={globalStyles.listContent}
         showsVerticalScrollIndicator={false}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  subGreeting: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  searchBar: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    justifyContent: 'center',
-  },
-  searchPlaceholder: {
-    color: '#9ca3af',
-    fontSize: 14,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  seeAll: {
-    fontSize: 14,
-    color: '#2563eb',
-    fontWeight: '500',
-  },
-  categoryList: {
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  categoryCard: {
-    width: 100,
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#eff6ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  categoryIconText: {
-    fontSize: 24,
-  },
-  categoryName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1f2937',
-    textAlign: 'center',
-  },
-  providerCard: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    marginBottom: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  providerImage: {
-    width: 100,
-    height: 100,
-  },
-  providerInfo: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
-  },
-  providerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  providerCategory: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginVertical: 4,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  rating: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  reviewCount: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-});

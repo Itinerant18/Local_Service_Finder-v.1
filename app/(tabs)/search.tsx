@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   TextInput,
@@ -11,8 +10,10 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { supabase, ServiceCategory } from '@/lib/supabase';
+import { ServiceCategory } from '@/lib/firebase';
+import { getServiceCategories, getServiceProviders } from '@/lib/realtime-helpers';
 import { Search as SearchIcon, MapPin, Star, ChevronDown } from 'lucide-react-native';
+import { globalStyles } from '@/styles/global';
 
 export default function Search() {
   const router = useRouter();
@@ -39,16 +40,15 @@ export default function Search() {
 
   const loadData = async () => {
     try {
-      const [categoriesResult, providersResult] = await Promise.all([
-        supabase.from('service_categories').select('*'),
-        supabase
-          .from('service_providers')
-          .select('*, users:id(full_name, profile_picture_url, city)')
-          .eq('verification_status', 'verified'),
+      const [categories, providers] = await Promise.all([
+        getServiceCategories(),
+        getServiceProviders({
+          verificationStatus: 'verified',
+        }),
       ]);
 
-      setCategories(categoriesResult.data || []);
-      setProviders(providersResult.data || []);
+      setCategories(categories);
+      setProviders(providers);
     } catch (error) {
       console.error('Error loading search data:', error);
     } finally {
@@ -83,33 +83,33 @@ export default function Search() {
 
   const renderProviderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.providerCard}
+      style={globalStyles.providerCard}
       onPress={() => router.push({ pathname: '/provider-details', params: { id: item.id } })}
     >
       <Image
         source={{ uri: item.users?.profile_picture_url || 'https://via.placeholder.com/120' }}
-        style={styles.providerImage}
+        style={globalStyles.providerImage}
       />
-      <View style={styles.providerInfo}>
-        <Text style={styles.providerName} numberOfLines={1}>
+      <View style={globalStyles.providerInfo}>
+        <Text style={globalStyles.providerName} numberOfLines={1}>
           {item.users?.full_name}
         </Text>
-        <Text style={styles.providerCategory} numberOfLines={1}>
+        <Text style={globalStyles.providerCategory} numberOfLines={1}>
           {getCategoryName(item.category_id)}
         </Text>
-        <View style={styles.detailsRow}>
-          <View style={styles.detail}>
-            <Text style={styles.detailLabel}>₹{item.hourly_rate}/hr</Text>
+        <View style={globalStyles.detailsRow}>
+          <View style={globalStyles.detail}>
+            <Text style={globalStyles.detailLabel}>₹{item.hourly_rate}/hr</Text>
           </View>
-          <View style={styles.detail}>
+          <View style={globalStyles.detail}>
             <Star size={12} color="#fbbf24" fill="#fbbf24" />
-            <Text style={styles.detailLabel}>{item.average_rating.toFixed(1)}</Text>
+            <Text style={globalStyles.detailLabel}>{item.average_rating.toFixed(1)}</Text>
           </View>
         </View>
         {item.users?.city && (
-          <View style={styles.location}>
+          <View style={globalStyles.location}>
             <MapPin size={12} color="#9ca3af" />
-            <Text style={styles.locationText} numberOfLines={1}>
+            <Text style={globalStyles.locationText} numberOfLines={1}>
               {item.users.city}
             </Text>
           </View>
@@ -120,19 +120,19 @@ export default function Search() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={globalStyles.centerContainer}>
         <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchSection}>
-        <View style={styles.searchBar}>
+    <View style={globalStyles.container}>
+      <View style={globalStyles.searchSection}>
+        <View style={globalStyles.searchBar}>
           <SearchIcon size={20} color="#9ca3af" strokeWidth={2} />
           <TextInput
-            style={styles.searchInput}
+            style={globalStyles.searchInput}
             placeholder="Search providers..."
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -141,31 +141,31 @@ export default function Search() {
         </View>
 
         <TouchableOpacity
-          style={styles.filterButton}
+          style={globalStyles.filterButton}
           onPress={() => setShowFilters(!showFilters)}
         >
           <ChevronDown size={20} color="#2563eb" strokeWidth={2} />
-          <Text style={styles.filterButtonText}>Filters</Text>
+          <Text style={globalStyles.filterButtonText}>Filters</Text>
         </TouchableOpacity>
       </View>
 
       {showFilters && (
-        <ScrollView style={styles.filterPanel} showsVerticalScrollIndicator={false}>
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Category</Text>
+        <ScrollView style={globalStyles.filterPanel} showsVerticalScrollIndicator={false}>
+          <View style={globalStyles.filterGroup}>
+            <Text style={globalStyles.filterLabel}>Category</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              style={styles.categoryScroll}
+              style={globalStyles.categoryScroll}
             >
               <TouchableOpacity
-                style={[styles.filterChip, !selectedCategory && styles.filterChipActive]}
+                style={[globalStyles.filterChip, !selectedCategory && globalStyles.filterChipActive]}
                 onPress={() => setSelectedCategory(null)}
               >
                 <Text
                   style={[
-                    styles.filterChipText,
-                    !selectedCategory && styles.filterChipTextActive,
+                    globalStyles.filterChipText,
+                    !selectedCategory && globalStyles.filterChipTextActive,
                   ]}
                 >
                   All
@@ -175,15 +175,15 @@ export default function Search() {
                 <TouchableOpacity
                   key={category.id}
                   style={[
-                    styles.filterChip,
-                    selectedCategory === category.id && styles.filterChipActive,
+                    globalStyles.filterChip,
+                    selectedCategory === category.id && globalStyles.filterChipActive,
                   ]}
                   onPress={() => setSelectedCategory(category.id)}
                 >
                   <Text
                     style={[
-                      styles.filterChipText,
-                      selectedCategory === category.id && styles.filterChipTextActive,
+                      globalStyles.filterChipText,
+                      selectedCategory === category.id && globalStyles.filterChipTextActive,
                     ]}
                   >
                     {category.name}
@@ -193,19 +193,19 @@ export default function Search() {
             </ScrollView>
           </View>
 
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Minimum Rating</Text>
-            <View style={styles.ratingButtons}>
+          <View style={globalStyles.filterGroup}>
+            <Text style={globalStyles.filterLabel}>Minimum Rating</Text>
+            <View style={globalStyles.ratingButtons}>
               {[0, 3, 4, 4.5].map((rating) => (
                 <TouchableOpacity
                   key={rating}
-                  style={[styles.ratingButton, minRating === rating && styles.ratingButtonActive]}
+                  style={[globalStyles.ratingButton, minRating === rating && globalStyles.ratingButtonActive]}
                   onPress={() => setMinRating(rating)}
                 >
                   <Text
                     style={[
-                      styles.ratingButtonText,
-                      minRating === rating && styles.ratingButtonTextActive,
+                      globalStyles.ratingButtonText,
+                      minRating === rating && globalStyles.ratingButtonTextActive,
                     ]}
                   >
                     {rating === 0 ? 'All' : `${rating}★+`}
@@ -215,9 +215,9 @@ export default function Search() {
             </View>
           </View>
 
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Hourly Rate</Text>
-            <Text style={styles.priceRange}>
+          <View style={globalStyles.filterGroup}>
+            <Text style={globalStyles.filterLabel}>Hourly Rate</Text>
+            <Text style={globalStyles.priceRange}>
               ₹{priceRange[0]} - ₹{priceRange[1]}
             </Text>
           </View>
@@ -228,11 +228,11 @@ export default function Search() {
         data={filteredProviders}
         renderItem={renderProviderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={globalStyles.listContent}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No providers found</Text>
-            <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+          <View style={globalStyles.emptyContainer}>
+            <Text style={globalStyles.emptyText}>No providers found</Text>
+            <Text style={globalStyles.emptySubtext}>Try adjusting your filters</Text>
           </View>
         }
         showsVerticalScrollIndicator={false}
@@ -240,193 +240,3 @@ export default function Search() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 44,
-    gap: 10,
-    marginBottom: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#1f2937',
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 8,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#2563eb',
-  },
-  filterPanel: {
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    maxHeight: 200,
-  },
-  filterGroup: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  filterLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 10,
-  },
-  categoryScroll: {
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-  },
-  filterChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginRight: 8,
-  },
-  filterChipActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-  filterChipText: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  filterChipTextActive: {
-    color: '#ffffff',
-  },
-  ratingButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  ratingButton: {
-    flex: 1,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-  },
-  ratingButtonActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-  ratingButtonText: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  ratingButtonTextActive: {
-    color: '#ffffff',
-  },
-  priceRange: {
-    fontSize: 13,
-    color: '#2563eb',
-    fontWeight: '600',
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 20,
-  },
-  providerCard: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  providerImage: {
-    width: 100,
-    height: 120,
-  },
-  providerInfo: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
-  },
-  providerName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  providerCategory: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginVertical: 4,
-  },
-  detailsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginVertical: 4,
-  },
-  detail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  detailLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  location: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  locationText: {
-    fontSize: 11,
-    color: '#9ca3af',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 13,
-    color: '#9ca3af',
-  },
-});
